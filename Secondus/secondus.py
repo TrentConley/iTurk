@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import os
 from os import listdir
 from matplotlib import image
 from keras.models import Sequential
@@ -98,37 +99,118 @@ def fill_folder(dir, save_fol, size = 320):
 # fill_folder('chess-dataset/labeled_preprocessed', 'single_squares_2')
 
 
-def to_FEN(dir, model):
-    loaded_images = list()
-    key = np.array([])
-    output = np.array([])
+# Python3 program to rotate a matrix by 90 degrees
+# I copied this from https://www.geeksforgeeks.org/inplace-rotate-square-matrix-by-90-degrees/
+
+
+# An Inplace function to rotate
+# N x N matrix by 90 degrees in
+# anti-clockwise direction
+def rotateMatrix(mat, N = 8):
+    # Consider all squares one by one
+    for x in range(0, int(N / 2)):
+
+        # Consider elements in group
+        # of 4 in current square
+        for y in range(x, N - x - 1):
+            # store current cell in temp variable
+            temp = mat[x][y]
+
+            # move values from right to top
+            mat[x][y] = mat[y][N - 1 - x]
+
+            # move values from bottom to right
+            mat[y][N - 1 - x] = mat[N - 1 - x][N - 1 - y]
+
+            # move values from left to bottom
+            mat[N - 1 - x][N - 1 - y] = mat[N - 1 - y][x]
+
+            # assign temp to left
+            mat[N - 1 - y][x] = temp
+
+        # Function to print the matrix
+
+
+def displayMatrix(mat, N = 8):
+    for i in range(0, N):
+
+        for j in range(0, N):
+            print (mat[i][j])
+        print ("")
+
+
+def getBoard(pic, model, size2 = 320):
+    square_size = size2 / 8
+    output = [[0] * 8] * 8
+    # chessboard = [[0]*8]*8
     # Here I load in the images from the folder that I previously filled.
-    for filename in listdir(dir):
-        if filename != '.DS_Store':
-            img_data = image.imread(dir + '/' + filename)
-            output = np.append(output, [int(filename[0])])
-            # store loaded image
-            num = int(filename[filename.find('-') + 1:filename.find('.')])
-            key = np.append(key, num)
-            loaded_images.append(img_data)
-    all_images = np.array(loaded_images)
-    arr = model.predict_classes(all_images)
+    print(pic)
+    pic = Image.open(pic)
+    count = 0
+    mylist = []
+    for row in range(0, 8):
+        for col in range(0, 8):
+            pic_crop = pic.crop((square_size * row, (square_size * col), square_size + (square_size * row),
+                                 square_size + (square_size * col)))
+            name = 'dump/' + 'temp.png'
+            pic_crop.save(name)
+            pic_data = image.imread(name)
+            for file in os.listdir('dump'):
+                if file.endswith('.png'):
+                    os.remove('dump/' + file)
+                    # pic_data = pic_data[np.newaxis, ...]
+
+            temp = model.predict_classes(np.asarray([pic_data]))
+            output[row][col] = temp
+            count = count + 1
+        # print(output)
+        templist = []
+        for f in range(0, 8):
+            templist.append(output[row][f][0])
+        mylist.append(templist)
+        print (mylist)
+    for i in range(0, 3):
+        rotateMatrix(mylist)
+    return mylist
+
+
+def to_FEN(pic, model, size1 = 320):
+    board = getBoard(pic, model, size2 = size1)
+
+
+    displayMatrix (board)
+
+
+
+    # print(chessboard)
+
+
+
+
+
+
+
+
+    #
+    # all_images = np.array(loaded_images)
+    # arr = model.predict_classes(all_images)
     # print (arr)
     # print(key)
-    finalarr1 = np.array([0]*64)
-    for i in range (0, 64):
-        finalarr1[int(key[i])] = arr[i]
-    finalarr2 = np.array([0]*64)
-    for i in range(0, 8):
-        for j in range (0, 8):
-            finalarr2[j*8 + i] = finalarr1[i*8 + j]
-
-    finalarr2 = finalarr2.reshape(8,8)
-    print (finalarr2)
-    # Reshaped data so that I can work with it as a 2-D array
-    output = output.reshape(len(output), 1)
-    # arr[int(pos)%8][int(int(pos)/8)] = type
-    # print(arr)
+    #
+    # finalarr1 = np.array([0]*64)
+    # for i in range (0, 64):
+    #     finalarr1[int(arr[i])] = arr[i]
+    # finalarr2 = np.array([0]*64)
+    # for i in range(0, 8):
+    #     for j in range (0, 8):
+    #         finalarr2[j*8 + i] = finalarr1[i*8 + j]
+    #
+    # finalarr2 = finalarr2.reshape(8,8)
+    # print (finalarr2)
+    # # Reshaped data so that I can work with it as a 2-D array
+    # output = output.reshape(len(output), 1)
+    # # arr[int(pos)%8][int(int(pos)/8)] = type
+    # # print(arr)
 
 def get_label(foo):
     label = foo[:2]
@@ -155,7 +237,7 @@ def load_model(json = 'model.json', h5 = 'model.h5'):
     print("Loaded model from disk")
     return model
 
-def run(dir, build, high_res, json = 'model.json', h5 = 'model.h5'):
+def run(dir, build, high_res, json = 'model.json', h5 = 'model.h5', size = 320):
     loaded_images = list()
     output = np.array([])
     # Here I load in the images from the folder that I previously filled.
@@ -245,7 +327,9 @@ def run(dir, build, high_res, json = 'model.json', h5 = 'model.h5'):
     score = model.evaluate(x_test, y_test, verbose=0)
     print('\nTest accuracy:', score[1])
     if not build:
-        to_FEN(dir, model)
+        for filename in listdir('board_to_analyze'):
+            if filename != '.DS_Store':
+                print(to_FEN('board_to_analyze/' + filename, model, size1 = size))
     else:
         save_model(model)
 # run('single_squares', True)

@@ -20,6 +20,7 @@ from keras.optimizers import SGD, Adagrad, RMSprop, Adam, Nadam
 from keras.models import model_from_json
 
 
-
-foo = np.array([2]*13)
-print (8/2)
+foo = False
+boo = True
+if boo and not foo:
+    print ('got your ass')

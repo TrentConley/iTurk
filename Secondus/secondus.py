@@ -132,10 +132,13 @@ def rotateMatrix(mat, N = 8):
 
 
 def displayMatrix(mat, N = 8):
+    dict = {0: '-', 1: 'p', 2: 'b', 3: 'n', 4: 'r', 5: 'k', 6: 'q', 7: 'P', 8: 'B', 9: 'N', 10: 'R', 11: 'K',
+            12: 'Q'}
     for i in range(0, N):
-
+        mystr = ''
         for j in range(0, N):
-            print (mat[i][j])
+            mystr = mystr + str(dict[mat[i][7-j]])
+        print (mystr)
         print ("")
 
 
@@ -176,41 +179,15 @@ def getBoard(pic, model, size2 = 320):
 
 def to_FEN(pic, model, size1 = 320):
     board = getBoard(pic, model, size2 = size1)
+    displayMatrix(board)
+
+#     FEN = ''
+#     for i in range (0, 8):
+#         for j in range(0, 8):
+#             board[i][j]
+# # sunfish
 
 
-    displayMatrix (board)
-
-
-
-    # print(chessboard)
-
-
-
-
-
-
-
-
-    #
-    # all_images = np.array(loaded_images)
-    # arr = model.predict_classes(all_images)
-    # print (arr)
-    # print(key)
-    #
-    # finalarr1 = np.array([0]*64)
-    # for i in range (0, 64):
-    #     finalarr1[int(arr[i])] = arr[i]
-    # finalarr2 = np.array([0]*64)
-    # for i in range(0, 8):
-    #     for j in range (0, 8):
-    #         finalarr2[j*8 + i] = finalarr1[i*8 + j]
-    #
-    # finalarr2 = finalarr2.reshape(8,8)
-    # print (finalarr2)
-    # # Reshaped data so that I can work with it as a 2-D array
-    # output = output.reshape(len(output), 1)
-    # # arr[int(pos)%8][int(int(pos)/8)] = type
-    # # print(arr)
 
 def get_label(foo):
     label = foo[:2]
@@ -219,12 +196,12 @@ def get_label(foo):
     return label
 
 # serialize model to JSON
-def save_model(model):
+def save_model(model, file_name= 'model3'):
     model_json = model.to_json()
-    with open("model2.json", "w") as json_file:
+    with open(file_name + ".json", "w") as json_file:
         json_file.write(model_json)
     # serialize weights to HDF5
-    model.save_weights("model2.h5")
+    model.save_weights(file_name + ".h5")
     print("Saved model to disk")
 
 def load_model(json = 'model.json', h5 = 'model.h5'):
@@ -237,99 +214,108 @@ def load_model(json = 'model.json', h5 = 'model.h5'):
     print("Loaded model from disk")
     return model
 
-def run(dir, build, high_res, json = 'model.json', h5 = 'model.h5', size = 320):
-    loaded_images = list()
-    output = np.array([])
-    # Here I load in the images from the folder that I previously filled.
-    for filename in listdir(dir):
-        if filename != '.DS_Store':
-            img_data = image.imread(dir + '/' + filename)
-            output = np.append(output, [int(get_label(filename))])
-            # store loaded image
-            loaded_images.append(img_data)
-    all_images = np.array(loaded_images)
+def run(build = False, high_res = False, json = 'model.json', h5 = 'model.h5', size = 320, boardfolder = 'board_to_analyze', dir = 'equal_pic', skip = True):
+    if not skip and not build:
+        loaded_images = list()
+        output = np.array([])
+        # Here I load in the images from the folder that I previously filled.
+        for filename in listdir(dir):
+            if filename != '.DS_Store':
+                img_data = image.imread(dir + '/' + filename)
+                output = np.append(output, [int(get_label(filename))])
+                # store loaded image
+                loaded_images.append(img_data)
+        all_images = np.array(loaded_images)
 
-    # Reshaped data so that I can work with it as a 2-D array
-    output = output.reshape(len(output), 1)
+        # Reshaped data so that I can work with it as a 2-D array
+        output = output.reshape(len(output), 1)
 
-    # Here I splice the data into test and train.
-    length = int(len(output)*0.8)
-    y_train = output[:length]
-    y_test = output[length:]
-    x_train = all_images[:length]
-    x_test = all_images[length:]
+        # Here I splice the data into test and train.
+        length = int(len(output)*0.8)
+        y_train = output[:length]
+        y_test = output[length:]
+        x_train = all_images[:length]
+        x_test = all_images[length:]
 
 
-    # Preparing the data:
-    print("Scaling input data...")
-    max_val = np.max(x_train).astype(np.float32)
-    print("Max value: " +  str(max_val))
-    x_train = x_train.astype(np.float32) / max_val
-    x_test = x_test.astype(np.float32) / max_val
-    y_train = y_train.astype(np.int32)
-    y_test = y_test.astype(np.int32)
+        # Preparing the data:
+        print("Scaling input data...")
+        max_val = np.max(x_train).astype(np.float32)
+        print("Max value: " +  str(max_val))
+        x_train = x_train.astype(np.float32) / max_val
+        x_test = x_test.astype(np.float32) / max_val
+        y_train = y_train.astype(np.int32)
+        y_test = y_test.astype(np.int32)
 
-    # Convert class vectors to binary class matrices.
-    # print ((y_train))
-    num_classes = len(np.unique(y_train))
-    # if not build:
-    #     num_classes = 13
-    print("Number of classes in this dataset: " + str(num_classes))
-    if num_classes > 2:
-        print("One hot encoding targets...")
-        y_train = keras.utils.to_categorical(y_train, num_classes)
-        y_test = keras.utils.to_categorical(y_test, num_classes)
+        # Convert class vectors to binary class matrices.
+        # print ((y_train))
+        num_classes = len(np.unique(y_train))
+        # if not build:
+        #     num_classes = 13
+        print("Number of classes in this dataset: " + str(num_classes))
+        if num_classes > 2:
+            print("One hot encoding targets...")
+            y_train = keras.utils.to_categorical(y_train, num_classes)
+            y_test = keras.utils.to_categorical(y_test, num_classes)
 
-    print("Original input shape: " + str(x_train.shape[1:]))
+        print("Original input shape: " + str(x_train.shape[1:]))
 
-    if build:
+        if build:
 
-        ### Second, build a model:
-        model = Sequential()
+            ### Second, build a model:
+            model = Sequential()
 
-        model.add(Conv2D(48, (3, 3), padding='same',
-                         input_shape=x_train.shape[1:]))
-        model.add(Activation('relu'))
-        if high_res:
-            model.add(Conv2D(96, (8, 8)))
+            model.add(Conv2D(48, (3, 3), padding='same',
+                             input_shape=x_train.shape[1:]))
+            model.add(Activation('relu'))
+            if high_res:
+                model.add(Conv2D(96, (8, 8)))
+                model.add(Activation('relu'))
+                model.add(MaxPooling2D(pool_size=(2, 2)))
+                model.add(Dropout(0.15))
+
+            model.add(Conv2D(48, (3, 3)))
             model.add(Activation('relu'))
             model.add(MaxPooling2D(pool_size=(2, 2)))
-            model.add(Dropout(0.15))
+            model.add(Dropout(0.25))
 
-        model.add(Conv2D(48, (3, 3)))
-        model.add(Activation('relu'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Dropout(0.25))
+            model.add(Flatten())
+            model.add(Dense(num_classes))
+            model.add(Activation('softmax'))
+        else:
+            model = load_model(json, h5)
+        model.summary()
 
-        model.add(Flatten())
-        model.add(Dense(num_classes))
-        model.add(Activation('softmax'))
+        mloss = 'categorical_crossentropy'
+        opt = RMSprop()
+
+        model.compile(loss=mloss,
+                      optimizer=opt,
+                      metrics=['accuracy'])
+
+        if build:
+            ### Fourth, train and test the model!
+            epochs = 50
+            history = model.fit(x_train, y_train,
+                                epochs=epochs,
+                                verbose=2,
+                                validation_data=(x_test, y_test),
+                                shuffle=True)
+
+        score = model.evaluate(x_test, y_test, verbose=0)
+        print('\nTest accuracy:', score[1])
     else:
         model = load_model(json, h5)
-    model.summary()
+        mloss = 'categorical_crossentropy'
+        opt = RMSprop()
 
-    mloss = 'categorical_crossentropy'
-    opt = RMSprop()
-
-    model.compile(loss=mloss,
-                  optimizer=opt,
-                  metrics=['accuracy'])
-
-    if build:
-        ### Fourth, train and test the model!
-        epochs = 50
-        history = model.fit(x_train, y_train,
-                            epochs=epochs,
-                            verbose=2,
-                            validation_data=(x_test, y_test),
-                            shuffle=True)
-
-    score = model.evaluate(x_test, y_test, verbose=0)
-    print('\nTest accuracy:', score[1])
+        model.compile(loss=mloss,
+                      optimizer=opt,
+                      metrics=['accuracy'])
     if not build:
-        for filename in listdir('board_to_analyze'):
+        for filename in listdir(boardfolder):
             if filename != '.DS_Store':
-                print(to_FEN('board_to_analyze/' + filename, model, size1 = size))
+                print(to_FEN(boardfolder + '/' + filename, model, size1 = size))
     else:
         save_model(model)
 # run('single_squares', True)
@@ -381,51 +367,9 @@ def same_num_pieces(dir, save_fol):
 
 # something is wrong with the shape. for some reason the model that I saved has a shape of 10.
 # same_num_pieces('single_squares_2', 'equal_pic')
-run('equal_pic', False, False, json = 'model2.json', h5 = 'model2.h5')
+run(json = 'model2.json', h5 = 'model2.h5')
 # run('single_squares_2', False, False, 'model2.json', 'model2.h5')
 
 
-
-
-
-
-        #     pic = Image.open(dir + '/' + filename)
-        #     arr = get_FEN(filename[:filename.find('.png')])
-        #     for row in range(0, 8):
-        #         for col in range(0, 8):
-        #             pic_crop = pic.crop((40 * row, (40 * col), 40 + (40 * row), 40 + (40 * col)))
-        #             pic_crop.save(save_fol + '/' + str(arr[col][row]) + '-' + str(index) + '.png')
-        #             index = index + 1
-        #     index = index + 1
-        # print (index)
-
-
-# later...
-# fill_folder('board_to_analyze', 'pieces_to_analyze')
-# run ('single_squares_2', True)
-# run('pieces_to_analyze', False)
-# model = load_model()
-# loaded_images = list()
-# in_order = list()
-# dir = 'pieces_to_analyze'
-# for filename in listdir(dir):
-#     if filename != '.DS_Store':
-#         img_data = image.imread('pieces_to_analyze' + '/' + filename)
-#         loaded_images.append(img_data)
-#         in_order.append(str(filename[:2]))
-# all_images = np.array(loaded_images)
-# in_order_arr = np.array(in_order)
-# newarr = model.predict_classes(all_images)
-# # print(in_order)
-# dict= { 0 : 'blank', 1: 'p', 2: 'b', 3:'n', 4:'r', 5:'k', 6:'q', 7:'P', 8:'B', 9:'N', 10:'R', 11:'K', 12:'Q'}
-# # for i in range (0, len(all_images)):
-# #     if str(in_order_arr[i])[1] == '-':
-# #         in_order_arr[i] = in_order_arr[i][0]
-# #     print (dict[int(in_order_arr[i])])
-#     print (newarr[i])
-#     print (in_order_arr[i])
-#     print ('\n')
-# train neural net on same number of pieces
-#
 
 

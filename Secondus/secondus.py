@@ -147,7 +147,6 @@ def getBoard(pic, model, size2 = 320):
     output = [[0] * 8] * 8
     # chessboard = [[0]*8]*8
     # Here I load in the images from the folder that I previously filled.
-    print(pic)
     pic = Image.open(pic)
     count = 0
     mylist = []
@@ -171,20 +170,39 @@ def getBoard(pic, model, size2 = 320):
         for f in range(0, 8):
             templist.append(output[row][f][0])
         mylist.append(templist)
-        print (mylist)
     for i in range(0, 3):
         rotateMatrix(mylist)
     return mylist
 
 
-def to_FEN(pic, model, size1 = 320):
+def to_FEN(pic, model, size1 = 320, move = 'w', castle = '-'):
+    dict = {0: '-', 1: 'p', 2: 'b', 3: 'n', 4: 'r', 5: 'k', 6: 'q', 7: 'P', 8: 'B', 9: 'N', 10: 'R', 11: 'K',
+            12: 'Q'}
     board = getBoard(pic, model, size2 = size1)
     displayMatrix(board)
 
-#     FEN = ''
-#     for i in range (0, 8):
-#         for j in range(0, 8):
-#             board[i][j]
+
+
+    FEN = ''
+    for i in range (0, 8):
+        count = 0
+        for j in range(0, 8):
+            key = dict[board[i][7- j]]
+            if key == '-':
+                count = count + 1
+            else:
+                if count == 0:
+                    FEN = FEN + key
+                else:
+                    FEN = FEN + str(count) + key
+                    count = 0
+            if j == 7 and count > 0:
+                FEN = FEN + str(count)
+        FEN = FEN + '/'
+    FEN = FEN[:-1]
+    FEN = FEN + ' ' + move + ' ' + castle + ' - 0 1'
+    return FEN
+
 # # sunfish
 
 

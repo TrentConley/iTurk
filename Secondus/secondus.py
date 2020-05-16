@@ -389,5 +389,5 @@ run(json = 'model2.json', h5 = 'model2.h5')
 # run('single_squares_2', False, False, 'model2.json', 'model2.h5')
 
 
-
+#plz dont crash
 
